@@ -4,58 +4,62 @@ require 'hashie'
 require 'pry-nav'
 
 class Calculator
-  class << self
-    GROCERIES = {
-      'milk' => Hashie::Mash.new({ price: 3.97, sale_price: 5.00, sale_quantity: 2 }),
-      'bread' => Hashie::Mash.new({ price: 2.17, sale_price: 6.00, sale_quantity: 3 }),
-      'banana' => Hashie::Mash.new({ price: 0.99 }),
-      'apple' => Hashie::Mash.new({ price: 0.89 })
-    }.freeze
+  GROCERIES = {
+    'milk' => Hashie::Mash.new({ price: 3.97, sale_price: 5.00, sale_quantity: 2 }),
+    'bread' => Hashie::Mash.new({ price: 2.17, sale_price: 6.00, sale_quantity: 3 }),
+    'banana' => Hashie::Mash.new({ price: 0.99 }),
+    'apple' => Hashie::Mash.new({ price: 0.89 })
+  }.freeze
 
-    def build_grocery_purchase_data(purchases)
-      grocery_report = Hashie::Mash.new(total_purchase_price: 0, total_savings: 0)
-      purchases.each do |item|
-        update_line_item(grocery_report, item)
-      end
-      add_summary_data(grocery_report)
-      grocery_report
+  attr_accessor :grocery_report
+
+  def initialize
+    @grocery_report = Hashie::Mash.new(total_purchase_price: 0, total_savings: 0)
+  end
+
+  def build_grocery_purchase_data(purchases)
+    purchases.each do |item|
+      update_line_item(item)
     end
+  end
 
-    private
-    
-    def add_summary_data(grocery_report)
-      # do total, sales total should be here already?
-    end
+  private
 
-    def update_savings_total(grocery_report, discount)
-      grocery_report['total_savings'] += discount
-    end
+  def adjust_total_report_price(amount)
+    grocery_report.total_purchase_price += amount
+  end
 
-    def adjust_for_sales_price(grocery_report, item)
-      # I am assuming based on the stated requirements that the sale's price can only apply once and not for each sales quantity
-      # I can simply change the total price once if the sales quantity is hit given the assumption that a sales price can only occur once per item
-      return unless grocery_report[item].quantity == GROCERIES[item].sale_quantity
+  def update_savings_total(discount)
+    grocery_report.total_savings += discount
+  end
 
-      discount = grocery_report[item].line_item_total_price - GROCERIES[item].sale_price
-      grocery_report[item].line_item_total_price = GROCERIES[item].sale_price
-      update_savings_total(grocery_report, discount)
-    end
+  def on_sale?(item)
+    grocery_report[item].quantity == GROCERIES[item].sale_quantity
+  end
 
-    def update_line_item_total_price(grocery_report, item)
-      grocery_report[item].line_item_total_price += GROCERIES[item].price
-      adjust_for_sales_price(grocery_report, item)
-    end
+  def on_sale_workflow(item)
+    discount = grocery_report[item].line_item_total_price - GROCERIES[item].sale_price
+    update_savings_total(discount)
+    grocery_report[item].line_item_total_price -= discount
+    adjust_total_report_price(-discount)
+  end
 
-    def update_line_item_quantity(grocery_report, item)
-      grocery_report[item].quantity += 1
-    end
+  def update_line_item_total_price(item)
+    on_sale_workflow(item) && return if on_sale?(item)
 
-    def update_line_item(grocery_report, item)
-      grocery_report[item] = Hashie::Mash.new(quantity: 0, line_item_total_price: 0) unless grocery_report[item]
+    grocery_report[item].line_item_total_price += GROCERIES[item].price
+    adjust_total_report_price(GROCERIES[item].price)
+  end
 
-      update_line_item_quantity(grocery_report, item)
-      update_line_item_total_price(grocery_report, item)
-    end
+  def update_line_item_quantity(item)
+    grocery_report[item].quantity += 1
+  end
+
+  def update_line_item(item)
+    grocery_report[item] = Hashie::Mash.new(quantity: 0, line_item_total_price: 0) unless grocery_report[item]
+
+    update_line_item_quantity(item)
+    update_line_item_total_price(item)
   end
 end
 

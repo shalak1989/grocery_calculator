@@ -6,6 +6,7 @@ puts "Please enter all the items purchased separated by a comma"
 #purchases = gets.chomp.delete(' ').split(',')
 purchases = "milk,milk, bread,banana,bread,bread,bread,milk,apple".delete(' ').split(',')
 
-grocery_report = Calculator.build_grocery_purchase_data(purchases)
+calculator = Calculator.new
+calculator.build_grocery_purchase_data(purchases)
 
-ReceiptBuilder.print_receipt(grocery_report)
+ReceiptBuilder.print_receipt(calculator.grocery_report)
