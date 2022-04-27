@@ -14,19 +14,24 @@ class Calculator
   attr_accessor :grocery_report
 
   def initialize
-    @grocery_report = Hashie::Mash.new(total_purchase_price: 0, total_savings: 0)
+    @grocery_report = Hashie::Mash.new(total_undiscounted_price: 0, total_savings: 0, total_price_with_savings: 0)
   end
 
   def build_grocery_purchase_data(purchases)
     purchases.each do |item|
       update_line_item(item)
     end
+    set_price_with_savings
   end
 
   private
 
+  def set_price_with_savings
+    grocery_report.total_price_with_savings = grocery_report.total_undiscounted_price - grocery_report.total_savings
+  end
+
   def adjust_total_report_price(amount)
-    grocery_report.total_purchase_price += amount
+    grocery_report.total_undiscounted_price += amount # why are you fucking stupid?
   end
 
   def update_savings_total(discount)
@@ -38,17 +43,18 @@ class Calculator
   end
 
   def on_sale_workflow(item)
-    discount = grocery_report[item].line_item_total_price - GROCERIES[item].sale_price
+    discount = (GROCERIES[item].price * grocery_report[item].quantity - GROCERIES[item].sale_price).round(2)
     update_savings_total(discount)
-    grocery_report[item].line_item_total_price -= discount
-    adjust_total_report_price(-discount)
+    grocery_report[item].line_item_total_price = GROCERIES[item].sale_price
   end
 
   def update_line_item_total_price(item)
-    on_sale_workflow(item) && return if on_sale?(item)
-
-    grocery_report[item].line_item_total_price += GROCERIES[item].price
-    adjust_total_report_price(GROCERIES[item].price)
+    if on_sale?(item)
+      on_sale_workflow(item)
+    else
+      grocery_report[item].line_item_total_price += GROCERIES[item].price
+    end
+    adjust_total_report_price(GROCERIES[item].price) # Discounts will be shown later
   end
 
   def update_line_item_quantity(item)
@@ -62,14 +68,3 @@ class Calculator
     update_line_item_total_price(item)
   end
 end
-
-# Item     Unit price        Sale price
-# --------------------------------------
-# Milk      $3.97            2 for $5.00
-# Bread     $2.17            3 for $6.00
-# Banana    $0.99
-# Apple     $0.89
-
-# It was not specified if the sale price should apply for each sale quantity or just once
-# Essentially should 4 units of milk be $10 or should it be 5 + 3.97 + 3.97?
-# I am assuming since the instructions were not explicit on this that the sale price only applies once
