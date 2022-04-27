@@ -32,7 +32,7 @@ class PurchaseReport
   end
 
   def set_price_with_savings
-   @total_price_with_savings = @total_price_without_savings - @total_savings
+    @total_price_with_savings = @total_price_without_savings - @total_savings
   end
 
   # def adjust_total_report_price(amount)

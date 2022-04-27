@@ -1,7 +1,14 @@
 class ReceiptBuilder
   class << self
-    def print_receipt(grocery_report)
-      puts build_receipt(grocery_report)
+    def build_receipt(purchase_report)
+      receipt = "Item     Quantity      Price\n--------------------------------------\n"
+      purchase_report.grocery_report.each do |k, v|
+        receipt += "#{k}#{calculate_spacing(k)}#{v.quantity}            $#{v.line_item_total_price}\n"
+      end
+
+      receipt += "Total price: $#{purchase_report.total_price_with_savings}\n"
+      receipt += "You saved $#{purchase_report.total_savings} today.\n"
+      receipt
     end
 
     private
@@ -10,37 +17,11 @@ class ReceiptBuilder
     # This was made just to solve this specific use case
     def calculate_spacing(item)
       space_needed = 10 - item.length
-      spacer = ""
-      space_needed.times do 
-        spacer += " "
+      spacer = ''
+      space_needed.times do
+        spacer += ' '
       end
       spacer
     end
-
-    def build_receipt(grocery_report)
-      receipt = "Item     Quantity      Price\n--------------------------------------\n"
-      grocery_report.each do |k, v| 
-        receipt += "#{k}#{calculate_spacing(k)}#{v}            $#{}\n"
-      end
-
-      receipt += "Total price: $#{}\n"
-      receipt += "You saved $#{} today.\n"
-      receipt
-    end
   end
 end
-
-
-      # $ ruby price_calculator.rb
-      # Please enter all the items purchased separated by a comma
-      # milk,milk, bread,banana,bread,bread,bread,milk,apple
-      
-      # Item     Quantity      Price
-      # --------------------------------------
-      # Milk      3            $8.97
-      # Bread     4            $8.17
-      # Apple     1            $0.89
-      # Banana    1            $0.99
-      
-      # Total price : $19.02
-      # You saved $3.45 today.
