@@ -4,7 +4,6 @@ class ReceiptBuilder
       puts build_receipt(grocery_report)
     end
 
-
     private
 
     # I would need to do something more complicated to make this work dynamically for any kind of grocery list
